@@ -1,0 +1,184 @@
+[
+  {
+    "idCollaborateur": "C1000",
+    "name":"COL1",
+    "serviceTraitement": "ST_1",
+    "affectationsMap": {
+      "MONDAY": [
+        {
+          "id": "1",
+          "idActivite": "11",
+          "ctiviteName": "ACTM11"
+        },
+        {
+          "id": "2",
+          "idActivite": "12",
+          "ctiviteName": "ACTM12"
+        }
+      ],
+      "TUESDAY": [
+        {
+          "id": "3",
+          "idActivite": "13",
+          "ctiviteName": "ACTT13"
+        },
+        {
+          "id": "4",
+          "idActivite": "14",
+          "ctiviteName": "ACTT14"
+        }
+      ],
+      "WEDNESDAY": [
+        {
+          "id": "3",
+          "idActivite": "13",
+          "ctiviteName": "ACTT13"
+        },
+        {
+          "id": "4",
+          "idActivite": "14",
+          "ctiviteName": "ACTT14"
+        }
+      ],
+      "THURDSDAY": [
+        {
+          "id": "3",
+          "idActivite": "13",
+          "ctiviteName": "ACTT13"
+        },
+        {
+          "id": "4",
+          "idActivite": "14",
+          "ctiviteName": "ACTT14"
+        }
+      ],
+      "FRIDAY": [
+        {
+          "id": "3",
+          "idActivite": "13",
+          "ctiviteName": "ACTT13"
+        },
+        {
+          "id": "4",
+          "idActivite": "14",
+          "ctiviteName": "ACTT14"
+        }
+      ],
+      "SATURDAY": [
+        {
+          "id": "5",
+          "idActivite": "15",
+          "ctiviteName": "ACTT15"
+        },
+        {
+          "id": "6",
+          "idActivite": "16",
+          "ctiviteName": "ACTT16"
+        }
+      ],
+      "SUNDAY": [
+        {
+          "id": "7",
+          "idActivite": "17",
+          "ctiviteName": "ACTT17"
+        },
+        {
+          "id": "8",
+          "idActivite": "18",
+          "ctiviteName": "ACTT18"
+        }
+      ]
+    }
+  },
+  {
+    "idCollaborateur": "C2000",
+    "name":"COL2",
+    "serviceTraitement": "ST_1",
+    "affectationsMap": {
+      "MONDAY": [
+        {
+          "id": "1",
+          "idActivite": "11",
+          "ctiviteName": "ACTM11"
+        },
+        {
+          "id": "2",
+          "idActivite": "12",
+          "ctiviteName": "ACTM12"
+        }
+      ],
+      "TUESDAY": [
+        {
+          "id": "3",
+          "idActivite": "13",
+          "ctiviteName": "ACTT13"
+        },
+        {
+          "id": "4",
+          "idActivite": "14",
+          "ctiviteName": "ACTT14"
+        }
+      ],
+      "WEDNESDAY": [
+        {
+          "id": "3",
+          "idActivite": "13",
+          "ctiviteName": "ACTT13"
+        },
+        {
+          "id": "4",
+          "idActivite": "14",
+          "ctiviteName": "ACTT14"
+        }
+      ],
+      "THURDSDAY": [
+        {
+          "id": "3",
+          "idActivite": "13",
+          "ctiviteName": "ACTT13"
+        },
+        {
+          "id": "4",
+          "idActivite": "14",
+          "ctiviteName": "ACTT14"
+        }
+      ],
+      "FRIDAY": [
+        {
+          "id": "3",
+          "idActivite": "13",
+          "ctiviteName": "ACTT13"
+        },
+        {
+          "id": "4",
+          "idActivite": "14",
+          "ctiviteName": "ACTT14"
+        }
+      ],
+      "SATURDAY": [
+        {
+          "id": "5",
+          "idActivite": "15",
+          "ctiviteName": "ACTT15"
+        },
+        {
+          "id": "6",
+          "idActivite": "16",
+          "ctiviteName": "ACTT16"
+        }
+      ],
+      "SUNDAY": [
+        {
+          "id": "7",
+          "idActivite": "17",
+          "ctiviteName": "ACTT17"
+        },
+        {
+          "id": "8",
+          "idActivite": "18",
+          "ctiviteName": "ACTT18"
+        }
+      ]
+    }
+  }
+]

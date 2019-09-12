@@ -1,0 +1,19 @@
+<ng-container>
+  <div class="row">
+    <div class="col-lg-3">
+    </div>
+    <div class="col-lg-3">
+      <div>
+        UG Traitement <input type="text" [(ngModel)]="uniteGestion">
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div>
+        ST
+        <select [(ngModel)]="serviceTraitement" (change)="changeSt($event)">
+          <option *ngFor="let st of listST" [value]="st">{{st}}</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</ng-container>
