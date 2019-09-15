@@ -1,0 +1,12 @@
+
+<div id="act" #refToShow [hidden]="isHiddenActivite" >
+  <div *ngFor="let activite of planning.affectationsMap[day]">
+    {{activite.idActivite}} - {{activite.activiteName}}
+  </div>
+  <button type="button" class="btn btn-primary" (click)="openModalWithComponent()">Create modal with component</button>
+  <button type="button" class="btn btn-primary" (click)="openModal(refToShow)">Ajouter une activite</button>
+ <!--
+   <app-activite-modal (isHiddenPlanning)="showActivePlanDay($event)"></app-activite-modal>
+  -->
+</div>
+

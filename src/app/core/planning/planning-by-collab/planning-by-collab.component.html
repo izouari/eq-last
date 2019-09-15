@@ -1,0 +1,27 @@
+<div class="row">
+  <div class="col-lg-4"></div>
+  <div class="col-lg-4">
+    <table>
+      <thead>
+      <tr>
+        <td>Collaborateur</td>
+        <td [ngClass]="{'colorDay': day === (currentDay|uppercase)}" *ngFor="let day of days"> {{day === (currentDay|uppercase)}} - {{day}}</td>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let planning of plannings">
+        <td><app-planning-header [planning]="planning"></app-planning-header></td>
+
+        <td  [ngClass]="{'colorDay': day === (currentDay|uppercase)}" *ngFor="let day of days" (click)="test(showDetail)">
+          <app-planning-detail #showDetail [day]="day" [planning]="planning"></app-planning-detail>
+        </td>
+
+
+
+      </tr>
+
+      </tbody>
+    </table>
+
+  </div>
+</div>

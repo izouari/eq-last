@@ -5,18 +5,24 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import {HeaderComponent} from "./core/header/header.component";
 import {FormsModule} from "@angular/forms";
+import {HttpClientModule} from "@angular/common/http";
+import {TooltipModule, ModalModule, BsModalService, AccordionModule} from "ngx-bootstrap";
+import {EquipeComponent} from "./core/equipe/equipe.component";
 
 @NgModule({
   declarations: [
     AppComponent,
-    HeaderComponent
+    HeaderComponent,
+    EquipeComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-    FormsModule
+    FormsModule,
+    HttpClientModule,
+    ModalModule.forRoot()
   ],
-  providers: [],
+  providers: [BsModalService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
