@@ -26,33 +26,30 @@ Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protrac
 
 To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
 
+#############################################################
 
+Best Practices – Exception Handling with SwapExException
 
+🎯 Objective
+Standardize error handling in our Java services in order to:
 
-Bonnes pratiques – Gestion des exceptions SwapExException
-🎯 Objectif
+    Centralize error codes
 
-Standardiser la gestion des erreurs dans nos services Java pour :
+    Ensure consistent traceability
 
-    Centraliser les codes d’erreur
+    Simplify client-side processing
 
-    Garantir une traçabilité cohérente
+    Provide a clean foundation for custom error messages
 
-    Simplifier l’exploitation et le traitement côté client
+✅ 1. Centralize errors in a dedicated enum
 
-    Fournir une base propre pour les messages d’erreur personnalisés
+Create an enumeration BusinessErrorMessage containing:
 
-✅ 1. Centraliser les erreurs dans une enum dédiée
+    A unique error code
 
-Créer une énumération BusinessErrorMessage qui contient :
+    A human-readable error message
 
-    Un code d’erreur unique
-
-    Un message d’erreur lisible
-
-    Un code HTTP standardisé
-
-
+    A standardized HTTP status code
 
     @AllArgsConstructor
 @Getter
@@ -71,17 +68,17 @@ public enum BusinessErrorMessage {
 }
 
 
-Avantages :
+Benefits:
 
-    Code d’erreur unique facilement traçable (ERR_SWA_001, etc.)
+    Easily traceable unique error codes (ERR_SWA_001, etc.)
 
-    Réutilisation dans tous les services sans duplication
+    Reusable across services without duplication
 
-    Support des messages paramétrables via String.format
+    Supports parameterized messages via String.format
 
-✅ 2. Créer une exception métier personnalisée : SwapExException
+2. Create a custom business exception: SwapExException
 
-Cette classe permet d'encapsuler un message, un code et un statut HTTP dans une exception métier claire.
+This class allows you to encapsulate a message, an error code, and an HTTP status in a clear business exception.
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -103,15 +100,16 @@ public class SwapExException extends RuntimeException {
     }
 }
 
-vantages :
+Advantages:
 
-    Simplifie le lien entre l'erreur levée et l’enum
+    Simplifies the link between the thrown error and the enum
 
-    Permet un mapping propre vers une réponse HTTP (dans un @ControllerAdvice par exemple)
+    Allows clean mapping to an HTTP response (e.g. via @ControllerAdvice)
 
-    Message d’erreur uniformisé dans les logs et réponses JSON
+    Provides uniform error messages in logs and JSON responses
 
-🔄 Exemple d'utilisation dans un service
+Example usage in a service
+
 
 public User getUser(String id) {
     return userRepository.findById(id)
@@ -119,15 +117,9 @@ public User getUser(String id) {
 }
 
 
-Un @RestControllerAdvice global
+Global exception handling with @RestControllerAdvice
 
-Une structure standardisée de réponse JSON en cas d’erreur
-
-Quelques bonnes pratiques supplémentaires liées au logging, fallback, etc.
-
-Gérer les exceptions globalement avec @RestControllerAdvice
-
-Créer un gestionnaire global pour capturer les exceptions SwapExException et retourner une réponse HTTP propre et lisible par le front.
+Create a global handler to catch SwapExException and return a clean, frontend-readable HTTP response.
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -143,7 +135,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getHttpStatus()).body(error);
     }
 }
-Définir une réponse d’erreur standard (ErrorResponse)
+
+✅ Define a standardized error response (ErrorResponse)
 
 @Data
 @AllArgsConstructor
@@ -155,10 +148,13 @@ public class ErrorResponse {
     private LocalDateTime timestamp;
 }
 
+Sample JSON response:
+
 {
   "errorCode": "ERR_SWA_001",
   "message": "User Not Found",
   "httpStatus": 404,
   "timestamp": "2025-08-07T15:24:10.205"
 }
+
 
