@@ -158,3 +158,175 @@ Sample JSON response:
 }
 
 
+    
+
+✅ Best Practices – Constructor Injection with Lombok in Spring Boot
+
+Why Constructor Injection?
+
+    Immutability: Dependencies are final and cannot be reassigned.
+
+    Testability: Easy to test with mock objects.
+
+    Null Safety: Ensures all required dependencies are set at creation time.
+
+    No magic: No reliance on field injection or reflection.
+
+
+✅ Recommended Lombok Setup
+
+Use the following combination:
+
+@Service
+@RequiredArgsConstructor
+public class MyService {
+
+    private final UserRepository userRepository;
+    private final EmailService emailService;
+
+    // Lombok auto-generates a constructor like:
+    // public MyService(UserRepository userRepository, EmailService emailService)
+}
+
+
+| Annotation                                        | Description                                                   |
+| ------------------------------------------------- | ------------------------------------------------------------- |
+| `@RequiredArgsConstructor`                        | Generates a constructor for all `final` and `@NonNull` fields |
+| `@Service`, `@Component`, `@RestController`, etc. | Standard Spring annotations for injection                     |
+| `@NonNull` (optional)                             | Triggers null checks in the generated constructor             |
+
+
+Best Practices
+
+    Always inject via final fields to enforce immutability:
+
+private final SomeDependency dependency;
+
+
+Avoid @Autowired on fields — prefer Lombok with constructor injection.
+
+Don’t mix @RequiredArgsConstructor with @AllArgsConstructor unnecessarily
+Use @AllArgsConstructor only if you have non-final fields that also need injection (rare and discouraged for services).
+
+Use @NonNull for additional safety (optional):
+
+private final @NonNull EmailService emailService;
+
+
+Do not initialize injected fields manually:
+
+// ❌ Bad
+private final EmailService emailService = new EmailServiceImpl();
+
+
+Example: Good Practice
+
+@Service
+@RequiredArgsConstructor
+public class OrderService {
+
+    private final OrderRepository orderRepository;
+    private final PaymentGateway paymentGateway;
+
+    public void processOrder(String orderId) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException(orderId));
+        paymentGateway.charge(order);
+    }
+}
+
+
+ Anti-pattern: Field Injection
+
+ // ❌ Avoid this
+@Service
+public class BadService {
+
+    @Autowired
+    private UserService userService;
+}
+
+
+Best Practice – Mutating Fields in DDD (Without Using Setters in Services)
+🎯 Objective:
+
+    Keep domain logic inside the domain model (aggregate root or entity)
+
+    Ensure invariants are respected
+
+    Prevent anemic domain models
+
+    Avoid exposing internal state via setXXX() from services
+
+
+    ❌ Anti-pattern (What to Avoid)
+
+Setting fields directly from the service:
+
+public void activateUser(User user) {
+    user.setStatus(UserStatus.ACTIVE); // ❌ not ideal in DDD
+}
+
+
+This turns your entity into a data bag and the service into a procedural controller, which breaks the DDD principles.
+
+✅ Recommended DDD Approach
+
+Let the domain model manage its own state via meaningful methods:
+
+public class User {
+
+    private final UUID id;
+    private String email;
+    private UserStatus status;
+
+    public User(UUID id, String email) {
+        this.id = id;
+        this.email = email;
+        this.status = UserStatus.PENDING;
+    }
+
+    public void activate() {
+        if (this.status == UserStatus.ACTIVE) {
+            throw new IllegalStateException("User is already active.");
+        }
+        this.status = UserStatus.ACTIVE;
+    }
+
+    // Getters only, no setters
+}
+
+Then in your service layer:
+
+public void activateUser(UUID userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new UserNotFoundException(userId));
+
+    user.activate(); // ✅ Domain logic encapsulated
+
+    userRepository.save(user);
+}
+
+
+| Benefit                              | Description                                                   |
+| ------------------------------------ | ------------------------------------------------------------- |
+| ✅ Encapsulation                      | Only the entity knows how to modify itself safely             |
+| ✅ Business logic lives in the domain | Service becomes coordination layer, not business logic holder |
+| ✅ Testability                        | Domain logic is unit-testable without Spring context          |
+| ✅ Respect of invariants              | Impossible to bypass validation or inconsistent state         |
+
+
+| What you want to do  | Name the method like                               |
+| -------------------- | -------------------------------------------------- |
+| Change status        | `activate()`, `cancel()`, `complete()`             |
+| Update a field       | `changeEmail(String newEmail)`                     |
+| Add/remove something | `addItem(OrderItem item)`, `removeLine(LineId id)` |
+
+
+🛑 Avoid
+
+    public void setStatus(UserStatus status)
+
+    public void setEmail(String email)
+
+    Making domain objects dumb data holders
