@@ -339,59 +339,59 @@ public void activateUser(UUID userId) {
 
     &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-    <dependency>
-  <groupId>com.flipkart.zjsonpatch</groupId>
-  <artifactId>zjsonpatch</artifactId>
-  <version>0.4.14</version>
-</dependency>
+    Objet : Points d’amélioration et gestion des dettes techniques
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.flipkart.zjsonpatch.JsonDiff;
+Bonjour [Nom/Équipe],
 
-public class JsonDiffExample {
-    public static void main(String[] args) throws Exception {
-        String expectedJson = """
-        {
-          "id": 1,
-          "name": "Lampe A",
-          "price": 9.9,
-          "available": true
-        }
-        """;
 
-        String actualJson = """
-        {
-          "id": 1,
-          "name": "Lampe B",
-          "price": 19.99,
-          "available": false
-        }
-        """;
+Suite à mon analyse des traitements existants, j’ai identifié plusieurs points d’amélioration à prendre en compte.
 
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode expected = mapper.readTree(expectedJson);
-        JsonNode actual = mapper.readTree(actualJson);
+Je les ai classés du moins urgent au plus urgent afin de faciliter la priorisation.
 
-        // 🔹 Calcule le diff
-        JsonNode diff = JsonDiff.asJson(expected, actual);
+Cette liste est évolutive : elle sera certainement enrichie au fur et à mesure de nos retours. L’objectif est de pouvoir créer des tickets dédiés et de les traiter progressivement, notamment lors des périodes de baisse de charge, afin de réduire la dette technique.
 
-        // 🔹 Parcourt le diff et affiche les différences
-        diff.forEach(change -> {
-            String op = change.get("op").asText();   // ex: "replace"
-            String path = change.get("path").asText(); // ex: "/name"
 
-            // Supprimer le "/" initial
-            String field = path.startsWith("/") ? path.substring(1) : path;
 
-            if ("replace".equals(op)) {
-                JsonNode oldValue = expected.at(path);
-                JsonNode newValue = actual.at(path);
-                System.out.printf("Champ modifié: %s | Avant: %s | Après: %s%n",
-                        field, oldValue, newValue);
-            }
-        });
-    }
-}
+
+
+📌 Points d’amélioration identifiés
+
+
+
+1. Service d’envoi d’email (moins urgent)
+
+
+    Mettre en place un service d’envoi d’emails plus simple et plus flexible.
+    Utiliser un moteur de templates (Thymeleaf ou FreeMarker) afin de gérer dynamiquement le contenu des emails.
+    Ce mécanisme permettra de centraliser et de rendre plus maintenable la gestion des envois.
+
+
+
+2. Gestion du processus d’envoi après publication
+
+
+    L’envoi d’email doit être déclenché uniquement après qu’une publication soit confirmée comme réussie.
+    Purger les données d’input uniquement une fois la publication terminée avec succès, afin d’éviter toute perte prématurée.
+    Vérifier que l’exécution de l’envoi n’intervient pas si la publication échoue.
+
+
+
+3. Gestion du rollback en cas d’erreur (point urgent)
+
+
+    Assurer un mécanisme de rollback complet lorsqu’une erreur survient lors d’une publication.
+    Vérifier la suppression correcte du référentiel créé dans le cadre de la publication.
+    Garantir la cohérence avec la suppression des données d’input côté référentiel.
+    Prévoir un mécanisme fiable pour permettre la republication en cas d’incident.
+
+
+
+4. Gouvernance du code et intégration continue (point très urgent)
+
+
+    Mettre en place une branche dédiée à l’intégration (par exemple integration), où le code doit être reviewé avant tout merge.
+    Interdire les merges directs sur la branche master. Celle-ci doit être réservée uniquement aux releases validées, une fois les tests réussis.
+    Mettre en place un processus clair : développement → merge sur integration → validation → merge sur master → génération de la release.
+
 
