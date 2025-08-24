@@ -330,3 +330,68 @@ public void activateUser(UUID userId) {
     public void setEmail(String email)
 
     Making domain objects dumb data holders
+
+
+
+
+
+
+
+    &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+    <dependency>
+  <groupId>com.flipkart.zjsonpatch</groupId>
+  <artifactId>zjsonpatch</artifactId>
+  <version>0.4.14</version>
+</dependency>
+
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flipkart.zjsonpatch.JsonDiff;
+
+public class JsonDiffExample {
+    public static void main(String[] args) throws Exception {
+        String expectedJson = """
+        {
+          "id": 1,
+          "name": "Lampe A",
+          "price": 9.9,
+          "available": true
+        }
+        """;
+
+        String actualJson = """
+        {
+          "id": 1,
+          "name": "Lampe B",
+          "price": 19.99,
+          "available": false
+        }
+        """;
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode expected = mapper.readTree(expectedJson);
+        JsonNode actual = mapper.readTree(actualJson);
+
+        // 🔹 Calcule le diff
+        JsonNode diff = JsonDiff.asJson(expected, actual);
+
+        // 🔹 Parcourt le diff et affiche les différences
+        diff.forEach(change -> {
+            String op = change.get("op").asText();   // ex: "replace"
+            String path = change.get("path").asText(); // ex: "/name"
+
+            // Supprimer le "/" initial
+            String field = path.startsWith("/") ? path.substring(1) : path;
+
+            if ("replace".equals(op)) {
+                JsonNode oldValue = expected.at(path);
+                JsonNode newValue = actual.at(path);
+                System.out.printf("Champ modifié: %s | Avant: %s | Après: %s%n",
+                        field, oldValue, newValue);
+            }
+        });
+    }
+}
+
