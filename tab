@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>${title!-"Changements de configuration"}</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+    .tbl { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; }
+    .tbl thead th {
+      padding: 10px 12px; text-align: left; font-weight: 600; color: #fff;
+      background: #0ea5e9; /* bleu ciel */
+      border-right: 1px solid rgba(255,255,255,.25);
+      white-space: nowrap;
+    }
+    .tbl th:last-child, .tbl td:last-child { border-right: none; }
+    .tbl tbody td { padding: 10px 12px; border-top: 1px solid #e5e7eb; vertical-align: top; }
+    .tbl tbody tr:nth-child(odd) { background: #f9fafb; }      /* zébrage */
+    .muted { color: #6b7280; font-size: 12px; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; line-height: 1; }
+    .badge--success { background: #10b981; color: #fff; }       /* CREATED / APPLIED */
+    .badge--warn    { background: #f59e0b; color: #111827; }    /* UPDATED */
+    .badge--error   { background: #ef4444; color: #fff; }       /* DELETED */
+    .badge--neutral { background: #94a3b8; color: #fff; }       /* NONE/UNCHANGED */
+    .title { margin: 0 0 8px; }
+  </style>
+</head>
+<body>
+
+  <h2 class="title">${title!-"Journal des modifications"}</h2>
+  <div class="muted">
+    Généré le ${generationDate!?string("dd/MM/yyyy HH:mm")!"--/--/---- --:--"}
+  </div>
+
+  <table class="tbl" role="grid" aria-label="Journal des modifications">
+    <thead>
+      <tr>
+        <th>Version</th>
+        <th>Nom du champ</th>
+        <th>Old value</th>
+        <th>New value</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+    <#if rows?? && rows?size gt 0>
+      <#list rows as r>
+        <#-- Classe de badge en fonction de l'action -->
+        <#assign a = (r.action!"")?upper_case>
+        <#assign actionClass =
+            (a == "CREATED" || a == "ADDED")?then("badge--success",
+            (a == "UPDATED" || a == "MODIFIED")?then("badge--warn",
+            (a == "DELETED" || a == "REMOVED")?then("badge--error","badge--neutral"))) />
+
+        <tr>
+          <td>${r.version!""?html}</td>
+          <td>${r.fieldName!""?html}</td>
+          <td>${r.oldValue?has_content?then(r.oldValue?string,"")?html}</td>
+          <td>${r.newValue?has_content?then(r.newValue?string,"")?html}</td>
+          <td><span class="badge ${actionClass}">${r.action!""?html}</span></td>
+        </tr>
+      </#list>
+    <#else>
+      <tr>
+        <td colspan="5" style="text-align:center; padding:18px;">Aucune donnée à afficher.</td>
+      </tr>
+    </#if>
+    </tbody>
+  </table>
+
+</body>
+</html>
