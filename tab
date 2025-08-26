@@ -1,26 +1,21 @@
-public boolean sendEmailWithTemplate(String to, String templateName, Map<String, Object> variables) {
-    try {
-        Template template = freemarkerConfig.getTemplate(templateName);
-        StringWriter out = new StringWriter();
-        template.process(variables, out);
-        String html = out.toString();
+<#-- Normaliser l'action -->
+<#assign A = (action!"")?upper_case?trim />
 
-        MimeMessage mime = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(
-                mime,
-                MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
-                StandardCharsets.UTF_8.name()
-        );
+<#-- Style inline selon l'action (compatible Outlook) -->
+<#assign badgeStyle =
+  (A == "CREATE" || A == "ADDED")?then(
+    "display:inline-block;padding:4px 8px;border-radius:999px;background:#10b981;color:#fff;",
+  (A == "UPDATE" || A == "MODIFIED")?then(
+    "display:inline-block;padding:4px 8px;border-radius:999px;background:#f59e0b;color:#111827;",
+  (A == "DELETE" || A == "REMOVED")?then(
+    "display:inline-block;padding:4px 8px;border-radius:999px;background:#ef4444;color:#fff;",
+    "display:inline-block;padding:4px 8px;border-radius:999px;background:#94a3b8;color:#fff;"
+  ))) />
 
-        helper.setTo(to);
-        helper.setFrom("noreply@ton-domaine.com");
-        helper.setSubject(String.valueOf(variables.getOrDefault("subject",
-                "R2D2 – Notification")));
-        helper.setText(html, true); // <<<< HTML
-
-        javaMailSender.send(mime);
-        return true;
-    } catch (TemplateException | IOException e) {
-        throw new RuntimeException(e);
-    }
-}
+<tr>
+  <td>${version!""?html}</td>
+  <td>${fieldName!""?html}</td>
+  <td>${oldValue?has_content?then(oldValue?string,"")?html}</td>
+  <td>${newValue?has_content?then(newValue?string,"")?html}</td>
+  <td><span style="${badgeStyle}">${A?html}</span></td>
+</tr>
