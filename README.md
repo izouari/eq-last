@@ -339,59 +339,75 @@ public void activateUser(UUID userId) {
 
     &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-    Objet : Points d’amélioration et gestion des dettes techniques
+    <!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>${title!-"Changements de configuration"}</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+    .tbl { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; }
+    .tbl thead th {
+      padding: 10px 12px; text-align: left; font-weight: 600; color: #fff;
+      background: #0ea5e9; /* bleu ciel */
+      border-right: 1px solid rgba(255,255,255,.25);
+      white-space: nowrap;
+    }
+    .tbl th:last-child, .tbl td:last-child { border-right: none; }
+    .tbl tbody td { padding: 10px 12px; border-top: 1px solid #e5e7eb; vertical-align: top; }
+    .tbl tbody tr:nth-child(odd) { background: #f9fafb; }      /* zébrage */
+    .muted { color: #6b7280; font-size: 12px; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; line-height: 1; }
+    .badge--success { background: #10b981; color: #fff; }       /* CREATED / APPLIED */
+    .badge--warn    { background: #f59e0b; color: #111827; }    /* UPDATED */
+    .badge--error   { background: #ef4444; color: #fff; }       /* DELETED */
+    .badge--neutral { background: #94a3b8; color: #fff; }       /* NONE/UNCHANGED */
+    .title { margin: 0 0 8px; }
+  </style>
+</head>
+<body>
 
+  <h2 class="title">${title!-"Journal des modifications"}</h2>
+  <div class="muted">
+    Généré le ${generationDate!?string("dd/MM/yyyy HH:mm")!"--/--/---- --:--"}
+  </div>
 
-Bonjour [Nom/Équipe],
+  <table class="tbl" role="grid" aria-label="Journal des modifications">
+    <thead>
+      <tr>
+        <th>Version</th>
+        <th>Nom du champ</th>
+        <th>Old value</th>
+        <th>New value</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+    <#if rows?? && rows?size gt 0>
+      <#list rows as r>
+        <#-- Classe de badge en fonction de l'action -->
+        <#assign a = (r.action!"")?upper_case>
+        <#assign actionClass =
+            (a == "CREATED" || a == "ADDED")?then("badge--success",
+            (a == "UPDATED" || a == "MODIFIED")?then("badge--warn",
+            (a == "DELETED" || a == "REMOVED")?then("badge--error","badge--neutral"))) />
 
+        <tr>
+          <td>${r.version!""?html}</td>
+          <td>${r.fieldName!""?html}</td>
+          <td>${r.oldValue?has_content?then(r.oldValue?string,"")?html}</td>
+          <td>${r.newValue?has_content?then(r.newValue?string,"")?html}</td>
+          <td><span class="badge ${actionClass}">${r.action!""?html}</span></td>
+        </tr>
+      </#list>
+    <#else>
+      <tr>
+        <td colspan="5" style="text-align:center; padding:18px;">Aucune donnée à afficher.</td>
+      </tr>
+    </#if>
+    </tbody>
+  </table>
 
-Suite à mon analyse des traitements existants, j’ai identifié plusieurs points d’amélioration à prendre en compte.
-
-Je les ai classés du moins urgent au plus urgent afin de faciliter la priorisation.
-
-Cette liste est évolutive : elle sera certainement enrichie au fur et à mesure de nos retours. L’objectif est de pouvoir créer des tickets dédiés et de les traiter progressivement, notamment lors des périodes de baisse de charge, afin de réduire la dette technique.
-
-
-
-
-
-📌 Points d’amélioration identifiés
-
-
-
-1. Service d’envoi d’email (moins urgent)
-
-
-    Mettre en place un service d’envoi d’emails plus simple et plus flexible.
-    Utiliser un moteur de templates (Thymeleaf ou FreeMarker) afin de gérer dynamiquement le contenu des emails.
-    Ce mécanisme permettra de centraliser et de rendre plus maintenable la gestion des envois.
-
-
-
-2. Gestion du processus d’envoi après publication
-
-
-    L’envoi d’email doit être déclenché uniquement après qu’une publication soit confirmée comme réussie.
-    Purger les données d’input uniquement une fois la publication terminée avec succès, afin d’éviter toute perte prématurée.
-    Vérifier que l’exécution de l’envoi n’intervient pas si la publication échoue.
-
-
-
-3. Gestion du rollback en cas d’erreur (point urgent)
-
-
-    Assurer un mécanisme de rollback complet lorsqu’une erreur survient lors d’une publication.
-    Vérifier la suppression correcte du référentiel créé dans le cadre de la publication.
-    Garantir la cohérence avec la suppression des données d’input côté référentiel.
-    Prévoir un mécanisme fiable pour permettre la republication en cas d’incident.
-
-
-
-4. Gouvernance du code et intégration continue (point très urgent)
-
-
-    Mettre en place une branche dédiée à l’intégration (par exemple integration), où le code doit être reviewé avant tout merge.
-    Interdire les merges directs sur la branche master. Celle-ci doit être réservée uniquement aux releases validées, une fois les tests réussis.
-    Mettre en place un processus clair : développement → merge sur integration → validation → merge sur master → génération de la release.
-
+</body>
+</html>
 
