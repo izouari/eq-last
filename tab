@@ -4,14 +4,9 @@
   <meta charset="UTF-8">
   <meta name="x-apple-disable-message-reformatting">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!--[if mso]>
-  <style type="text/css">
-    .fallback { font-family: Arial, sans-serif !important; }
-  </style>
-  <![endif]-->
   <title>${title!-"Journal des modifications"}</title>
 </head>
-<body class="fallback" style="margin:0;padding:20px;background:#ffffff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+<body style="margin:0;padding:20px;background:#ffffff;font-family:Arial, Helvetica, sans-serif;">
 
   <h2 style="margin:0 0 8px 0;font-weight:700;color:#111827;">
     ${title!-"Journal des modifications"}
@@ -20,7 +15,7 @@
     Généré le ${generationDate!?string("dd/MM/yyyy HH:mm")!"--/--/---- --:--"}
   </div>
 
-  <table role="presentation" align="left" width="100%" cellpadding="0" cellspacing="0" border="0"
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
          style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;border:1px solid #e5e7eb;margin-top:12px;">
     <thead>
       <tr bgcolor="#0ea5e9">
@@ -34,30 +29,34 @@
     <tbody>
     <#if rows?? && rows?size gt 0>
       <#list rows as r>
-        <#-- Zebra background computed server-side (Outlook ne gère pas :nth-child) -->
+        <#-- Zébrage calculé côté template (Outlook ne gère pas :nth-child) -->
         <#assign rowBg = (r?index % 2 == 0)?then("#ffffff","#f9fafb")>
 
-        <#-- Badge style inline (compat Outlook/Word) -->
+        <#-- Normalisation + couleurs badge -->
         <#assign A = (r.action!"")?upper_case?trim>
-        <#assign badgeStyle =
-          (A == "CREATED" || A == "ADDED")?then(
-            "display:inline-block;padding:4px 8px;border-radius:999px;background:#10b981;color:#ffffff;font-size:12px;line-height:1;",
-          (A == "UPDATED" || A == "MODIFIED")?then(
-            "display:inline-block;padding:4px 8px;border-radius:999px;background:#f59e0b;color:#111827;font-size:12px;line-height:1;",
-          (A == "DELETED" || A == "REMOVED")?then(
-            "display:inline-block;padding:4px 8px;border-radius:999px;background:#ef4444;color:#ffffff;font-size:12px;line-height:1;",
-            "display:inline-block;padding:4px 8px;border-radius:999px;background:#94a3b8;color:#ffffff;font-size:12px;line-height:1;"
-          ))) />
+        <#assign badgeBg =
+          (A == "CREATED" || A == "ADDED")?then("#10b981",
+          (A == "UPDATED" || A == "MODIFIED")?then("#f59e0b",
+          (A == "DELETED" || A == "REMOVED")?then("#ef4444","#94a3b8")))>
+        <#assign badgeColor = (A == "UPDATED" || A == "MODIFIED")?then("#111827","#ffffff")>
 
         <tr bgcolor="${rowBg}">
           <td style="padding:10px 12px;border-top:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">${r.version!""?html}</td>
           <td style="padding:10px 12px;border-top:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">${r.fieldName!""?html}</td>
           <td style="padding:10px 12px;border-top:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">${r.oldValue?has_content?then(r.oldValue?string,"")?html}</td>
           <td style="padding:10px 12px;border-top:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">${r.newValue?has_content?then(r.newValue?string,"")?html}</td>
+
           <td style="padding:10px 12px;border-top:1px solid #e5e7eb;">
-            <!--[if mso]><span style="${badgeStyle}"><![endif]-->
-            <span style="${badgeStyle}">${A?html}</span>
-            <!--[if mso]></span><![endif]-->
+            <!-- Badge robuste pour Outlook : petit tableau avec bgcolor -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+              <tr>
+                <td bgcolor="${badgeBg}"
+                    style="background:${badgeBg};color:${badgeColor};padding:4px 8px;
+                           font-size:12px;line-height:14px;font-weight:600;text-transform:uppercase;">
+                  ${A?html}
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
       </#list>
