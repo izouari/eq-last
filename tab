@@ -1,87 +1,44 @@
-@AllArgsConstructor
+import lombok.Getter;
+import lombok.experimental.FieldDefaults;
+import lombok.AccessLevel;
+
 @Getter
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public enum BusinessErrorMessage {
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class SwapException extends RuntimeException {
 
-    USER_NOT_FOUND("ERR_SWA_001", "User Not Found", HttpStatus.SC_NOT_FOUND),
-    ITEM_NOT_FOUND("ERR_SWA_002", "Item Not Found", HttpStatus.SC_NOT_FOUND),
-
-    JSON_PARSE_ERROR("ERR_SWA_003",
-            "Invalid JSON payload (%s).", HttpStatus.SC_BAD_REQUEST),
-    JSON_STRUCTURE_ERROR("ERR_SWA_004",
-            "Unexpected JSON structure at path '%s': %s", HttpStatus.SC_BAD_REQUEST),
-    JSON_MISSING_FIELD("ERR_SWA_005",
-            "Missing required field '%s'.", HttpStatus.SC_BAD_REQUEST);
-
-    String code;
+    String errorID;
+    int httpStatus;
     String message;
-    int httpCode;
+    BusinessErrorMessage beMessage;
 
-    public String getMessage(String... args) {
-        return String.format(message, (Object[]) args);
-    }
-
-    /** Fabriques pratiques */
-    public SWAPException toException(Throwable cause, String... args) {
-        return new SWAPException(this, cause, args);
-    }
-    public SWAPException toException(String... args) {
-        return new SWAPException(this, null, args);
-    }
-}
-
-
-@Data
-@EqualsAndHashCode(callSuper = true)
-public class SWAPException extends RuntimeException  {
-
-    private String errorID;
-    private int httpStatus;
-
-    public SWAPException(String errorID, String message, int httpStatus) {
+    public SwapException(String errorID, String message, int httpStatus) {
         super(message);
         this.errorID = errorID;
         this.httpStatus = httpStatus;
+        this.message = message;
     }
 
-    public SWAPException(BusinessErrorMessage beMessage, String... args) {
-        this(beMessage.getCode(), beMessage.getMessage(args), beMessage.getHttpCode());
+    public SwapException(BusinessErrorMessage beMessage) {
+        super(beMessage.getMessage());
+        this.errorID = beMessage.getCode();
+        this.httpStatus = beMessage.getHttpStatus();
+        this.message = beMessage.getMessage();
+        this.beMessage = beMessage;
     }
 
-    public SWAPException(BusinessErrorMessage beMessage, Throwable cause, String... args) {
+    public SwapException(BusinessErrorMessage beMessage, String... args) {
+        super(beMessage.getMessage(args));
+        this.errorID = beMessage.getCode();
+        this.httpStatus = beMessage.getHttpStatus();
+        this.message = beMessage.getMessage(args);
+        this.beMessage = beMessage;
+    }
+
+    public SwapException(BusinessErrorMessage beMessage, Throwable cause, String... args) {
         super(beMessage.getMessage(args), cause);
         this.errorID = beMessage.getCode();
-        this.httpStatus = beMessage.getHttpCode();
+        this.httpStatus = beMessage.getHttpStatus();
+        this.message = beMessage.getMessage(args);
+        this.beMessage = beMessage;
     }
 }
-
-
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-
-    @ExceptionHandler(SWAPException.class)
-    public ResponseEntity<ErrorDto> handleSWAP(SWAPException ex) {
-        ErrorDto body = new ErrorDto(ex.getErrorID(), ex.getMessage());
-        // Log détaillé avec la cause Jackson
-        org.slf4j.LoggerFactory.getLogger(getClass())
-                .warn("Business error {}: {}", ex.getErrorID(), ex.getMessage(), ex.getCause());
-        return ResponseEntity.status(ex.getHttpStatus()).body(body);
-    }
-
-    @Data @AllArgsConstructor
-    static class ErrorDto {
-        String code;
-        String message;
-    }
-}
-
-
- @ExceptionHandler(ArvalRuntimeException.class)
-    @ResponseBody
-    public ErrorDto handleCarenetBAException(ArvalRuntimeException e, HttpServletResponse response) {
-        LOGGER.error("Caught exception", e);
-        SAMessage baMessage = e.getSaMessage();
-        response.setStatus(baMessage.getHttpStatus().value());
-        return ErrorDto.builder().code(baMessage.getCode()).message(baMessage.getMessage()).build();
-    }
-
