@@ -1,80 +1,43 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>${title!-"Journal des modifications"}</title>
-</head>
-<body style="margin:0;padding:20px;background:#ffffff;font-family:Arial, Helvetica, sans-serif;">
+@AllArgsConstructor
+@Getter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public enum BusinessErrorMessage {
 
-  <h2 style="margin:0 0 8px 0;font-weight:700;color:#111827;">
-    ${title!-"Journal des modifications"}
-  </h2>
-  <div style="color:#6b7280;font-size:12px;line-height:1.4;">
-    Généré le ${generationDate!?string("dd/MM/yyyy HH:mm")!"--/--/---- --:--"}
-  </div>
+    USER_NOT_FOUND("ERR_SWA_001", "User Not Found", HttpStatus.SC_NOT_FOUND),
+    ITEM_NOT_FOUND("ERR_SWA_002", "Item Not Found", HttpStatus.SC_NOT_FOUND);
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-         style="border-collapse:collapse;border:1px solid #d1d5db;margin-top:12px;">
-    <tr bgcolor="#2563eb">
-      <td style="padding:10px 12px;font-weight:600;color:#ffffff;border-right:1px solid #1e40af;">Referential</td>
-      <td style="padding:10px 12px;font-weight:600;color:#ffffff;border-right:1px solid #1e40af;">Version</td>
-      <td style="padding:10px 12px;font-weight:600;color:#ffffff;border-right:1px solid #1e40af;">Workspace</td>
-      <td style="padding:10px 12px;font-weight:600;color:#ffffff;">Changements</td>
-    </tr>
 
-    <#if rows?? && rows?size gt 0>
-      <#list rows as r>
-        <#assign rowBg = (r?index % 2 == 0)?then("#ffffff","#f3f4f6")>
-        <tr bgcolor="${rowBg}">
-          <td style="padding:10px 12px;border-top:1px solid #d1d5db;border-right:1px solid #d1d5db;vertical-align:top;">${r.referential!""?html}</td>
-          <td style="padding:10px 12px;border-top:1px solid #d1d5db;border-right:1px solid #d1d5db;vertical-align:top;">${r.version!""?html}</td>
-          <td style="padding:10px 12px;border-top:1px solid #d1d5db;border-right:1px solid #d1d5db;vertical-align:top;">${r.workspace!""?html}</td>
-          <td style="padding:8px 10px;border-top:1px solid #d1d5db;vertical-align:top;">
-            
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
-              <tr bgcolor="#e5e7eb">
-                <td style="padding:6px 8px;font-weight:600;color:#111827;border-bottom:1px solid #d1d5db;width:35%;">Nom du champ</td>
-                <td style="padding:6px 8px;font-weight:600;color:#111827;border-bottom:1px solid #d1d5db;width:20%;">Ancien</td>
-                <td style="padding:6px 8px;font-weight:600;color:#111827;border-bottom:1px solid #d1d5db;width:20%;">Nouveau</td>
-                <td style="padding:6px 8px;font-weight:600;color:#111827;border-bottom:1px solid #d1d5db;width:25%;">Action</td>
-              </tr>
+    String code;
 
-              <#list r.changes as c>
-                <#assign innerBg = (c?index % 2 == 0)?then("#ffffff","#f9fafb")>
-                <#assign A = (c.action!"")?upper_case?trim>
-                <#assign badgeBg =
-                  (A == "CREATED" || A == "ADDED")?then("#10b981",
-                  (A == "UPDATED" || A == "MODIFIED")?then("#f59e0b",
-                  (A == "DELETED" || A == "REMOVED")?then("#ef4444","#9ca3af")))>
-                <#assign badgeColor = (A == "UPDATED" || A == "MODIFIED")?then("#111827","#ffffff")>
+    String message;
 
-                <tr bgcolor="${innerBg}">
-                  <td style="padding:6px 8px;border-bottom:1px solid #d1d5db;">${c.fieldName!""?html}</td>
-                  <td style="padding:6px 8px;border-bottom:1px solid #d1d5db;">${c.oldValue!""?html}</td>
-                  <td style="padding:6px 8px;border-bottom:1px solid #d1d5db;">${c.newValue!""?html}</td>
-                  <td style="padding:6px 8px;border-bottom:1px solid #d1d5db;">
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;">
-                      <tr>
-                        <td bgcolor="${badgeBg}" style="background:${badgeBg};color:${badgeColor};padding:3px 8px;
-                                   font-size:12px;line-height:14px;font-weight:600;text-transform:uppercase;">
-                          ${A}
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </#list>
-            </table>
+    int httpCode;
 
-          </td>
-        </tr>
-      </#list>
-    <#else>
-      <tr>
-        <td colspan="4" style="padding:18px;text-align:center;color:#6b7280;">Aucune donnée à afficher.</td>
-      </tr>
-    </#if>
-  </table>
+    public String getMessage(String... args) {
+        return String.format(message, (Object[]) args);
+    }
+}
 
-</body>
-</html>
+
+
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class SwapExException extends RuntimeException  {
+
+        private String errorID;
+        private int httpStatus;
+        private String message;
+
+        public SwapExException(String errorID, String message, int httpStatus) {
+            super(message);
+            this.errorID = errorID;
+            this.httpStatus = httpStatus;
+            this.message = message;
+        }
+
+    public SwapExException(BusinessErrorMessage beMessage) {
+        this(beMessage.getCode(), beMessage.getMessage(), beMessage.getHttpCode());
+    }
+
+}
