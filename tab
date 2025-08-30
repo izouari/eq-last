@@ -1,44 +1,119 @@
-import lombok.Getter;
-import lombok.experimental.FieldDefaults;
-import lombok.AccessLevel;
+@ExtendWith(MockitoExtension.class)
+class EmailServiceTest {
 
-@Getter
-@FieldDefaults(level = AccessLevel.PRIVATE)
-public class SwapException extends RuntimeException {
+  @Mock JavaMailSender mailSender;
+  @Mock freemarker.template.Configuration fmConfig;
+  @Mock Template template;
 
-    String errorID;
-    int httpStatus;
-    String message;
-    BusinessErrorMessage beMessage;
+  EmailService service;
 
-    public SwapException(String errorID, String message, int httpStatus) {
-        super(message);
-        this.errorID = errorID;
-        this.httpStatus = httpStatus;
-        this.message = message;
-    }
+  @BeforeEach
+  void setUp() {
+    service = new EmailService(mailSender, fmConfig);
+  }
 
-    public SwapException(BusinessErrorMessage beMessage) {
-        super(beMessage.getMessage());
-        this.errorID = beMessage.getCode();
-        this.httpStatus = beMessage.getHttpStatus();
-        this.message = beMessage.getMessage();
-        this.beMessage = beMessage;
-    }
+  @Test
+  void sendEmail_ok_withoutCc() throws Exception {
+    when(fmConfig.getTemplate("welcome.ftl")).thenReturn(template);
+    doAnswer(inv -> { ((Writer)inv.getArgument(1)).write("<h1>Hello</h1>"); return null; })
+        .when(template).process(anyMap(), any(Writer.class));
 
-    public SwapException(BusinessErrorMessage beMessage, String... args) {
-        super(beMessage.getMessage(args));
-        this.errorID = beMessage.getCode();
-        this.httpStatus = beMessage.getHttpStatus();
-        this.message = beMessage.getMessage(args);
-        this.beMessage = beMessage;
-    }
+    MimeMessage mime = new MimeMessage((Session) null);
+    when(mailSender.createMimeMessage()).thenReturn(mime);
 
-    public SwapException(BusinessErrorMessage beMessage, Throwable cause, String... args) {
-        super(beMessage.getMessage(args), cause);
-        this.errorID = beMessage.getCode();
-        this.httpStatus = beMessage.getHttpStatus();
-        this.message = beMessage.getMessage(args);
-        this.beMessage = beMessage;
-    }
+    boolean ok = service.sendEmailWithTemplate(
+        "no-reply@acme.test", "user@acme.test", null, "Subject",
+        "welcome.ftl", Map.of("name","Iheb"));
+
+    assertTrue(ok);
+    verify(mailSender).send(mime);
+    // vérifie le sujet/texte
+    assertEquals("Subject", mime.getSubject());
+    String content = (String) ((MimeMultipart)mime.getContent()).getBodyPart(0).getContent();
+    assertTrue(content.contains("Hello")); // rendu du template injecté
+  }
+
+  @Test
+  void sendEmail_ok_withCc() throws Exception {
+    when(fmConfig.getTemplate("t.ftl")).thenReturn(template);
+    doAnswer(inv -> { ((Writer)inv.getArgument(1)).write("body"); return null; })
+        .when(template).process(anyMap(), any(Writer.class));
+    when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+
+    service.sendEmailWithTemplate("from@x", "to@x", "cc@x", "S", "t.ftl", Map.of());
+
+    // on vérifie que le CC a été posé (via les headers)
+    ArgumentCaptor<MimeMessage> cap = ArgumentCaptor.forClass(MimeMessage.class);
+    verify(mailSender).send(cap.capture());
+    Address[] ccs = cap.getValue().getRecipients(Message.RecipientType.CC);
+    assertEquals(1, ccs.length);
+  }
+
+  @Test
+  void sendEmail_templateException_isMappedToBusinessError() throws Exception {
+    when(fmConfig.getTemplate("t.ftl")).thenReturn(template);
+    doThrow(new TemplateException("boom", new Environment(new Template("n","",fmConfig))))
+        .when(template).process(anyMap(), any(Writer.class));
+
+    var ex = assertThrows(SwapExException.class, () ->
+        service.sendEmailWithTemplate("f","t",null,"S","t.ftl", Map.of()));
+
+    assertEquals(BusinessErrorMessage.FREEMARKERS_TEMPLATE_ERROR.getCode(), ex.getErrorID());
+  }
+
+  @Test
+  void sendEmail_messagingException_isMapped() throws Exception {
+    when(fmConfig.getTemplate("t.ftl")).thenReturn(template);
+    doAnswer(inv -> { ((Writer)inv.getArgument(1)).write("ok"); return null; })
+        .when(template).process(anyMap(), any(Writer.class));
+    // on fait échouer lors de l'envoi
+    when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+    doThrow(new MailSendException("smtp down")).when(mailSender).send(any(MimeMessage.class));
+
+    var ex = assertThrows(SwapExException.class, () ->
+        service.sendEmailWithTemplate("f","t",null,"S","t.ftl", Map.of()));
+
+    assertEquals(BusinessErrorMessage.JAVA_MESSAGING_ERROR.getCode(), ex.getErrorID());
+  }
 }
+
+
+
+
+
+
+
+Integration##############################
+@SpringBootTest
+@TestPropertySource(properties = {
+  "spring.mail.host=localhost",
+  "spring.mail.port=3025",
+  "spring.mail.protocol=smtp",
+  "spring.freemarker.template-loader-path=classpath:/templates"
+})
+class EmailServiceIT {
+
+  @Autowired EmailService service;
+
+  static GreenMail greenMail = new GreenMail(ServerSetupTest.SMTP);
+
+  @BeforeAll static void start() { greenMail.start(); }
+  @AfterAll  static void stop()  { greenMail.stop(); }
+
+  @Test
+  void send_real_smtp_and_assert_received() throws Exception {
+    service.sendEmailWithTemplate("no-reply@acme.test","user@acme.test",null,
+        "Hello", "welcome.ftl", Map.of("name","Iheb"));
+
+    greenMail.waitForIncomingEmail(1);
+    Message[] msgs = greenMail.getReceivedMessages();
+    assertEquals(1, msgs.length);
+    assertEquals("Hello", msgs[0].getSubject());
+    String body = GreenMailUtil.getBody(msgs[0]);
+    assertTrue(body.contains("Iheb"));         // variable du template
+    assertTrue(body.contains("<html"));        // HTML bien envoyé
+  }
+}
+
+
+
