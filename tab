@@ -1,35 +1,9 @@
-package com.yourpkg;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
-import java.time.LocalDateTime;
-import java.util.*;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-@ExtendWith(MockitoExtension.class)
-class SchedulerEmailNotifTest {
-
-    @Mock private ChangesHistoryRepo changesHistoryRepo;
-    @Mock private RefVersionsCopyStatusRepo refVersionsCopyStatusRepo;
-    @Mock private RefWorkspaceRepo refWorkspaceRepo;
-    @Mock private EmailService emailService;
-    @Mock private MailProperties mailProperties;
-
-    @InjectMocks
-    private SchedulerEmailNotif schedulerEmailNotif;
-
     @Test
-    void execute_buildsNotifEmailDto_withExpectedFields() throws Exception {
+    void execute_throwsBusinessException_whenJsonIsInvalid() throws Exception {
         // GIVEN
         String referentialName = "RISK_LIMIT_REFERENTIAL";
         String workspaceName   = "WS1";
-        Long   versionId       = 1L;
+        Long   versionId       = 2L;
 
         RefWorkspace ws = new RefWorkspace();
         ws.setWorkspace(workspaceName);
@@ -38,7 +12,6 @@ class SchedulerEmailNotifTest {
         status.setWorkspace(workspaceName);
         status.setVersion(versionId);
 
-        // repos
         when(refVersionsCopyStatusRepo
                 .findByReferentialNameAndCopyStatusAndCopyTimestampGreaterThanEqualAndCopyTimestampLessThan(
                         eq(referentialName), any(), any(), any()))
@@ -46,41 +19,29 @@ class SchedulerEmailNotifTest {
 
         when(refWorkspaceRepo.findByWorkspace(workspaceName)).thenReturn(ws);
 
-        // history → contenu JSON VALIDE avec la clé utilisée dans buildNotifEmail:
-        // currentContentRoot.get("setOfLimit").get("riskLimitReferentialFamily")
+        // contenu JSON INVALIDE pour forcer objectMapper.readTree(...) à lever une JsonProcessingException
         ChangesHistory ch = new ChangesHistory();
         ch.setAction(RefInputActionEnum.UPDATE.name());
         ch.setVersion(versionId);
         ch.setWorkspace(workspaceName);
         ch.setInputBy("tester");
         ch.setInputTimestamp(LocalDateTime.now());
-        ch.setContent("{\"setOfLimit\":{\"riskLimitReferentialFamily\":\"FamilleTest\"}}");
+        ch.setContent("{invalid-json"); // volontairement invalide
         ch.setOriginContent("{\"before\":\"x\"}");
         when(changesHistoryRepo
                 .findByObjectAndWorkspaceAndVersionInAndInputTimestampGreaterThanEqualAndInputTimestampLessThan(
                         eq(referentialName), eq(ws), anySet(), any(), any()))
             .thenReturn(List.of(ch));
 
-        // capturer la liste envoyée à l'email service
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<NotifEmailDto>> listCaptor = ArgumentCaptor.forClass(List.class);
+        // WHEN + THEN
+        // Selon ton implémentation, BusinessErrorMessage.JSON_PARSE_ERROR.toException(...) retourne
+        // probablement une RuntimeException custom (ex: SwapExException / R2D2Exception).
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class, // remplace par ta classe exacte si dispo: SwapExException.class
+                () -> schedulerEmailNotif.executeTaskSxEmailNotif()
+        );
 
-        // WHEN
-        schedulerEmailNotif.executeTaskSxEmailNotif();
-
-        // THEN
-        verify(emailService, atLeastOnce()).apply(eq(emailService), eq(mailProperties), listCaptor.capture());
-        List<NotifEmailDto> payload = listCaptor.getValue();
-        assertThat(payload).hasSize(1);
-
-        NotifEmailDto dto = payload.get(0);
-        assertThat(dto.getReferentialName()).isEqualTo("FamilleTest");         // extrait du JSON
-        assertThat(dto.getWorkspace()).isEqualTo(workspaceName);
-        assertThat(dto.getAction()).isEqualTo(RefInputActionEnum.UPDATE.name());
-        assertThat(dto.getVersion()).isEqualTo(versionId);
-        assertThat(dto.getInputBy()).isEqualTo("tester");
-        assertThat(dto.getPublishDate()).isNotNull();
-
-        // le diff n’est pas généré pour CREATE; pour UPDATE on attend un diff non null (ta méthode appelle JsonUtils.processJsonDiff)
-        assertThat(dto.getContentDiff()).isNotNull();
+        // et évidemment dans ce cas, aucun mail envoyé
+        verify(emailService, never()).apply(any(), any(), any());
     }
+}
