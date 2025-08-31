@@ -1,119 +1,79 @@
 @ExtendWith(MockitoExtension.class)
-class EmailServiceTest {
+class SchedulerEmailNotifTest {
 
-  @Mock JavaMailSender mailSender;
-  @Mock freemarker.template.Configuration fmConfig;
-  @Mock Template template;
+    @Mock
+    private ChangesHistoryRepo changesHistoryRepo;
+    @Mock
+    private RefVersionsCopyStatusRepo refVersionsCopyStatusRepo;
+    @Mock
+    private RefWorkspaceRepo refWorkspaceRepo;
+    @Mock
+    private EmailService emailService;
+    @Mock
+    private MailProperties mailProperties;
 
-  EmailService service;
+    @InjectMocks
+    private SchedulerEmailNotif schedulerEmailNotif;
 
-  @BeforeEach
-  void setUp() {
-    service = new EmailService(mailSender, fmConfig);
-  }
+    @Test
+    void testExecuteTaskSxEmailNotif_withData() throws Exception {
+        // GIVEN
+        String workspaceName = "WS1";
+        Long versionId = 1L;
 
-  @Test
-  void sendEmail_ok_withoutCc() throws Exception {
-    when(fmConfig.getTemplate("welcome.ftl")).thenReturn(template);
-    doAnswer(inv -> { ((Writer)inv.getArgument(1)).write("<h1>Hello</h1>"); return null; })
-        .when(template).process(anyMap(), any(Writer.class));
+        RefWorkspace mockWorkspace = new RefWorkspace();
+        mockWorkspace.setName(workspaceName);
 
-    MimeMessage mime = new MimeMessage((Session) null);
-    when(mailSender.createMimeMessage()).thenReturn(mime);
+        RefVersionsCopyStatus mockStatus = new RefVersionsCopyStatus();
+        mockStatus.setVersion(versionId);
+        mockStatus.setWorkspace(workspaceName);
 
-    boolean ok = service.sendEmailWithTemplate(
-        "no-reply@acme.test", "user@acme.test", null, "Subject",
-        "welcome.ftl", Map.of("name","Iheb"));
+        Map<String, Map<Long, List<RefVersionsCopyStatus>>> fakeMap = Map.of(
+            workspaceName, Map.of(versionId, List.of(mockStatus))
+        );
 
-    assertTrue(ok);
-    verify(mailSender).send(mime);
-    // vérifie le sujet/texte
-    assertEquals("Subject", mime.getSubject());
-    String content = (String) ((MimeMultipart)mime.getContent()).getBodyPart(0).getContent();
-    assertTrue(content.contains("Hello")); // rendu du template injecté
-  }
+        // mock du repo status
+        when(refVersionsCopyStatusRepo.findByReferentialNameAndCopyStatusAndCopyTimestampGreaterThanEqualAndCopyTimestampLessThan(
+                anyString(), any(), any(), any())
+        ).thenReturn(List.of(mockStatus));
 
-  @Test
-  void sendEmail_ok_withCc() throws Exception {
-    when(fmConfig.getTemplate("t.ftl")).thenReturn(template);
-    doAnswer(inv -> { ((Writer)inv.getArgument(1)).write("body"); return null; })
-        .when(template).process(anyMap(), any(Writer.class));
-    when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+        // mock du workspace
+        when(refWorkspaceRepo.findByWorkspace(workspaceName)).thenReturn(mockWorkspace);
 
-    service.sendEmailWithTemplate("from@x", "to@x", "cc@x", "S", "t.ftl", Map.of());
+        // mock de l’history
+        ChangesHistory ch = new ChangesHistory();
+        ch.setAction("UPDATE");
+        ch.setVersion(versionId);
+        ch.setWorkspace(workspaceName);
+        ch.setContent("{\"setOfLimit\": {\"riskLimitReferentialFamily\": \"FamilleTest\"}}");
+        ch.setInputTimestamp(LocalDateTime.now());
+        ch.setInputBy("tester");
+        when(changesHistoryRepo.findByObjectAndWorkspaceAndVersionInAndInputTimestampGreaterThanEqualAndInputTimestampLessThan(
+                anyString(), eq(mockWorkspace), anySet(), any(), any())
+        ).thenReturn(List.of(ch));
 
-    // on vérifie que le CC a été posé (via les headers)
-    ArgumentCaptor<MimeMessage> cap = ArgumentCaptor.forClass(MimeMessage.class);
-    verify(mailSender).send(cap.capture());
-    Address[] ccs = cap.getValue().getRecipients(Message.RecipientType.CC);
-    assertEquals(1, ccs.length);
-  }
+        // WHEN
+        schedulerEmailNotif.executeTaskSxEmailNotif();
 
-  @Test
-  void sendEmail_templateException_isMappedToBusinessError() throws Exception {
-    when(fmConfig.getTemplate("t.ftl")).thenReturn(template);
-    doThrow(new TemplateException("boom", new Environment(new Template("n","",fmConfig))))
-        .when(template).process(anyMap(), any(Writer.class));
+        // THEN
+        verify(emailService, atLeastOnce()).apply(
+                eq(emailService),
+                eq(mailProperties),
+                anyList()
+        );
+    }
 
-    var ex = assertThrows(SwapExException.class, () ->
-        service.sendEmailWithTemplate("f","t",null,"S","t.ftl", Map.of()));
+    @Test
+    void testExecuteTaskSxEmailNotif_noData() throws Exception {
+        // GIVEN
+        when(refVersionsCopyStatusRepo.findByReferentialNameAndCopyStatusAndCopyTimestampGreaterThanEqualAndCopyTimestampLessThan(
+                anyString(), any(), any(), any())
+        ).thenReturn(Collections.emptyList());
 
-    assertEquals(BusinessErrorMessage.FREEMARKERS_TEMPLATE_ERROR.getCode(), ex.getErrorID());
-  }
+        // WHEN
+        schedulerEmailNotif.executeTaskSxEmailNotif();
 
-  @Test
-  void sendEmail_messagingException_isMapped() throws Exception {
-    when(fmConfig.getTemplate("t.ftl")).thenReturn(template);
-    doAnswer(inv -> { ((Writer)inv.getArgument(1)).write("ok"); return null; })
-        .when(template).process(anyMap(), any(Writer.class));
-    // on fait échouer lors de l'envoi
-    when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
-    doThrow(new MailSendException("smtp down")).when(mailSender).send(any(MimeMessage.class));
-
-    var ex = assertThrows(SwapExException.class, () ->
-        service.sendEmailWithTemplate("f","t",null,"S","t.ftl", Map.of()));
-
-    assertEquals(BusinessErrorMessage.JAVA_MESSAGING_ERROR.getCode(), ex.getErrorID());
-  }
+        // THEN : aucun email ne doit être envoyé
+        verify(emailService, never()).apply(any(), any(), any());
+    }
 }
-
-
-
-
-
-
-
-Integration##############################
-@SpringBootTest
-@TestPropertySource(properties = {
-  "spring.mail.host=localhost",
-  "spring.mail.port=3025",
-  "spring.mail.protocol=smtp",
-  "spring.freemarker.template-loader-path=classpath:/templates"
-})
-class EmailServiceIT {
-
-  @Autowired EmailService service;
-
-  static GreenMail greenMail = new GreenMail(ServerSetupTest.SMTP);
-
-  @BeforeAll static void start() { greenMail.start(); }
-  @AfterAll  static void stop()  { greenMail.stop(); }
-
-  @Test
-  void send_real_smtp_and_assert_received() throws Exception {
-    service.sendEmailWithTemplate("no-reply@acme.test","user@acme.test",null,
-        "Hello", "welcome.ftl", Map.of("name","Iheb"));
-
-    greenMail.waitForIncomingEmail(1);
-    Message[] msgs = greenMail.getReceivedMessages();
-    assertEquals(1, msgs.length);
-    assertEquals("Hello", msgs[0].getSubject());
-    String body = GreenMailUtil.getBody(msgs[0]);
-    assertTrue(body.contains("Iheb"));         // variable du template
-    assertTrue(body.contains("<html"));        // HTML bien envoyé
-  }
-}
-
-
-
