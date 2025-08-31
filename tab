@@ -1,47 +1,71 @@
+import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.List;
+
+class JsonUtilsTest {
+
     @Test
-    void execute_throwsBusinessException_whenJsonIsInvalid() throws Exception {
+    void testProcessJsonDiff_withChangedField() {
         // GIVEN
-        String referentialName = "RISK_LIMIT_REFERENTIAL";
-        String workspaceName   = "WS1";
-        Long   versionId       = 2L;
+        String origin = "{ \"name\": \"Alice\", \"age\": 25 }";
+        String actual = "{ \"name\": \"Bob\",   \"age\": 25 }"; // seul "name" change
 
-        RefWorkspace ws = new RefWorkspace();
-        ws.setWorkspace(workspaceName);
+        // WHEN
+        List<JsonDiffDto> diffs = JsonUtils.processJsonDiff(origin, actual);
 
-        RefVersionsCopyStatus status = new RefVersionsCopyStatus();
-        status.setWorkspace(workspaceName);
-        status.setVersion(versionId);
+        // THEN
+        assertThat(diffs).hasSize(1);
+        JsonDiffDto diff = diffs.get(0);
 
-        when(refVersionsCopyStatusRepo
-                .findByReferentialNameAndCopyStatusAndCopyTimestampGreaterThanEqualAndCopyTimestampLessThan(
-                        eq(referentialName), any(), any(), any()))
-            .thenReturn(List.of(status));
+        assertThat(diff.getField()).isEqualTo("name");
+        assertThat(diff.getOldValue().asText()).isEqualTo("Alice");
+        assertThat(diff.getNewValue().asText()).isEqualTo("Bob");
+    }
 
-        when(refWorkspaceRepo.findByWorkspace(workspaceName)).thenReturn(ws);
+    @Test
+    void testProcessJsonDiff_withMultipleChanges() {
+        // GIVEN
+        String origin = "{ \"name\": \"Alice\", \"age\": 25, \"city\":\"Paris\" }";
+        String actual = "{ \"name\": \"Alice\", \"age\": 30, \"city\":\"Lyon\" }"; 
 
-        // contenu JSON INVALIDE pour forcer objectMapper.readTree(...) à lever une JsonProcessingException
-        ChangesHistory ch = new ChangesHistory();
-        ch.setAction(RefInputActionEnum.UPDATE.name());
-        ch.setVersion(versionId);
-        ch.setWorkspace(workspaceName);
-        ch.setInputBy("tester");
-        ch.setInputTimestamp(LocalDateTime.now());
-        ch.setContent("{invalid-json"); // volontairement invalide
-        ch.setOriginContent("{\"before\":\"x\"}");
-        when(changesHistoryRepo
-                .findByObjectAndWorkspaceAndVersionInAndInputTimestampGreaterThanEqualAndInputTimestampLessThan(
-                        eq(referentialName), eq(ws), anySet(), any(), any()))
-            .thenReturn(List.of(ch));
+        // WHEN
+        List<JsonDiffDto> diffs = JsonUtils.processJsonDiff(origin, actual);
+
+        // THEN
+        assertThat(diffs).hasSize(2);
+
+        JsonDiffDto ageDiff = diffs.stream().filter(d -> d.getField().equals("age")).findFirst().orElseThrow();
+        assertThat(ageDiff.getOldValue().asInt()).isEqualTo(25);
+        assertThat(ageDiff.getNewValue().asInt()).isEqualTo(30);
+
+        JsonDiffDto cityDiff = diffs.stream().filter(d -> d.getField().equals("city")).findFirst().orElseThrow();
+        assertThat(cityDiff.getOldValue().asText()).isEqualTo("Paris");
+        assertThat(cityDiff.getNewValue().asText()).isEqualTo("Lyon");
+    }
+
+    @Test
+    void testProcessJsonDiff_withNoChanges() {
+        // GIVEN
+        String origin = "{ \"name\": \"Alice\" }";
+        String actual = "{ \"name\": \"Alice\" }";
+
+        // WHEN
+        List<JsonDiffDto> diffs = JsonUtils.processJsonDiff(origin, actual);
+
+        // THEN
+        assertThat(diffs).isEmpty();
+    }
+
+    @Test
+    void testProcessJsonDiff_withInvalidJson_shouldThrow() {
+        // GIVEN
+        String origin = "{ \"name\": \"Alice\" }";
+        String actual = "{ invalid-json }";
 
         // WHEN + THEN
-        // Selon ton implémentation, BusinessErrorMessage.JSON_PARSE_ERROR.toException(...) retourne
-        // probablement une RuntimeException custom (ex: SwapExException / R2D2Exception).
-        org.junit.jupiter.api.Assertions.assertThrows(
-                RuntimeException.class, // remplace par ta classe exacte si dispo: SwapExException.class
-                () -> schedulerEmailNotif.executeTaskSxEmailNotif()
-        );
-
-        // et évidemment dans ce cas, aucun mail envoyé
-        verify(emailService, never()).apply(any(), any(), any());
+        assertThrows(RuntimeException.class, () -> JsonUtils.processJsonDiff(origin, actual));
     }
 }
