@@ -1,71 +1,114 @@
-import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.jupiter.api.Test;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+Envoi d’Emails – Notification Automatique
+🎯 Objectif
 
-import java.util.List;
+L’objectif est d’envoyer automatiquement des emails de notification (par exemple : publication de référentiels) en utilisant JavaMailSender et des templates FreeMarker.
+Ce module permet de générer des emails dynamiques en HTML basés sur des données métiers (NotifEmailDto).
 
-class JsonUtilsTest {
+🏗️ Architecture Technique
+1. Configuration du MailSender
 
-    @Test
-    void testProcessJsonDiff_withChangedField() {
-        // GIVEN
-        String origin = "{ \"name\": \"Alice\", \"age\": 25 }";
-        String actual = "{ \"name\": \"Bob\",   \"age\": 25 }"; // seul "name" change
+La configuration du client SMTP est définie dans la classe MailSenderConfig.
 
-        // WHEN
-        List<JsonDiffDto> diffs = JsonUtils.processJsonDiff(origin, actual);
+@@@@@Code : MailSenderConfig
 
-        // THEN
-        assertThat(diffs).hasSize(1);
-        JsonDiffDto diff = diffs.get(0);
 
-        assertThat(diff.getField()).isEqualTo("name");
-        assertThat(diff.getOldValue().asText()).isEqualTo("Alice");
-        assertThat(diff.getNewValue().asText()).isEqualTo("Bob");
-    }
 
-    @Test
-    void testProcessJsonDiff_withMultipleChanges() {
-        // GIVEN
-        String origin = "{ \"name\": \"Alice\", \"age\": 25, \"city\":\"Paris\" }";
-        String actual = "{ \"name\": \"Alice\", \"age\": 30, \"city\":\"Lyon\" }"; 
+👉 Cette configuration permet :
 
-        // WHEN
-        List<JsonDiffDto> diffs = JsonUtils.processJsonDiff(origin, actual);
+d’initialiser le client SMTP,
 
-        // THEN
-        assertThat(diffs).hasSize(2);
+de définir les propriétés (host, protocol, debug…),
 
-        JsonDiffDto ageDiff = diffs.stream().filter(d -> d.getField().equals("age")).findFirst().orElseThrow();
-        assertThat(ageDiff.getOldValue().asInt()).isEqualTo(25);
-        assertThat(ageDiff.getNewValue().asInt()).isEqualTo(30);
+de s’appuyer sur les propriétés applicatives (MailProperties).
 
-        JsonDiffDto cityDiff = diffs.stream().filter(d -> d.getField().equals("city")).findFirst().orElseThrow();
-        assertThat(cityDiff.getOldValue().asText()).isEqualTo("Paris");
-        assertThat(cityDiff.getNewValue().asText()).isEqualTo("Lyon");
-    }
 
-    @Test
-    void testProcessJsonDiff_withNoChanges() {
-        // GIVEN
-        String origin = "{ \"name\": \"Alice\" }";
-        String actual = "{ \"name\": \"Alice\" }";
 
-        // WHEN
-        List<JsonDiffDto> diffs = JsonUtils.processJsonDiff(origin, actual);
 
-        // THEN
-        assertThat(diffs).isEmpty();
-    }
+2. Service d’Envoi d’Email
 
-    @Test
-    void testProcessJsonDiff_withInvalidJson_shouldThrow() {
-        // GIVEN
-        String origin = "{ \"name\": \"Alice\" }";
-        String actual = "{ invalid-json }";
+Le service EmailService encapsule la logique d’envoi via JavaMailSender et FreeMarker.
 
-        // WHEN + THEN
-        assertThrows(RuntimeException.class, () -> JsonUtils.processJsonDiff(origin, actual));
-    }
-}
+@@@@@@@@Code : sendEmailWithTemplate
+
+
+👉 Ici :
+
+FreeMarker est utilisé pour générer le contenu HTML en injectant les variables,
+
+JavaMailSender se charge de l’envoi effectif,
+
+La gestion d’erreurs est centralisée avec BusinessErrorMessage.
+
+
+
+3. Enum MailSender
+
+L’enum MailSender permet de définir différents types de mails avec leur template associé.
+
+@@@@@@@Code : MailSender
+
+
+
+4. Scheduler
+
+La classe SchedulerEmailNotif orchestre l’exécution périodique et déclenche l’envoi d’email.
+
+Exemple : notification de publication
+
+
+@@@@@@@@Code : SchedulerEmailNotif
+
+onnes pratiques
+
+Externaliser les templates .ftl dans src/main/resources/templates.
+
+Garder le service générique → EmailService ne doit pas contenir de logique métier.
+
+Utiliser l’enum MailSender pour centraliser les types de mails.
+
+Logger systématiquement les tentatives d’envoi (succès/échec).
+
+Activer le mode debug SMTP en recette (mail.debug=true), mais désactiver en prod.
+
+Prévoir des tests unitaires sur :
+
+la construction des variables injectées,
+
+la génération du NotifEmailDto,
+
+le fallback en cas de TemplateException
+
+
+
+spring:
+  mail:
+    host: smtp.mycorp.local
+    # … autres props communes
+
+---
+spring:
+  config:
+    activate:
+      on-profile: recette
+  mail:
+    properties:
+      mail.debug: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  mail:
+    properties:
+      mail.debug: false
+
+
+Ensuite, lance ton app avec le profil voulu :
+
+Recette : -Dspring.profiles.active=recette
+
+Prod : -Dspring.profiles.active=prod
+
+En K8s/Docker, tu peux aussi piloter ça par variable d’environnement :
+SPRING_MAIL_PROPERTIES_MAIL_DEBUG=true|false.
