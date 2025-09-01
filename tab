@@ -1,81 +1,121 @@
-Envoi d’Emails – Notification Automatique
-🎯 Objectif
+Email Notifications – Automated Sending with FreeMarker
+🎯 Purpose
 
-L’objectif est d’envoyer automatiquement des emails de notification (par exemple : publication de référentiels) en utilisant JavaMailSender et des templates FreeMarker.
-Ce module permet de générer des emails dynamiques en HTML basés sur des données métiers (NotifEmailDto).
-
-
-Architecture Technique
-1. Configuration du MailSender
-
-La configuration du client SMTP est définie dans la classe MailSenderConfig.
-
-@@@@@Code : MailSenderConfig
-
-Cette configuration permet :
-
-d’initialiser le client SMTP,
-
-de définir les propriétés (host, protocol, debug…),
-
-de s’appuyer sur les propriétés applicatives (MailProperties).
-
-2. Service d’Envoi d’Email
-
-Le service EmailService encapsule la logique d’envoi via JavaMailSender et FreeMarker.
-
-@@@@@@Code : EmailService
-
-ci :
-
-FreeMarker est utilisé pour générer le contenu HTML en injectant les variables,
-
-JavaMailSender se charge de l’envoi effectif,
-
-La gestion d’erreurs est centralisée avec BusinessErrorMessage.
+The purpose of this module is to automatically send notification emails (e.g., referential publication reports) using Spring Boot, JavaMailSender, and FreeMarker templates.
+This ensures that email content is dynamic, maintainable, and easy to customize.
 
 
+Technical Architecture
+1. MailSender Configuration
 
-3. Enum MailSender
+The MailSenderConfig class defines the SMTP configuration and initializes the JavaMailSender.
 
-L’enum MailSender permet de définir différents types de mails avec leur template associé.
+@@@@@@@Code : MailSenderConfig
 
-Exemple : notification de publication Risk Limit.
+📌 Purpose:
+This class centralizes the configuration of the SMTP client (JavaMailSender). It sets the SMTP host, protocol, and debug mode.
+
+2. Email Service
+
+The EmailService is responsible for processing FreeMarker templates and sending the email via JavaMailSender.
+
+@@@@@@@ Code : EmailService
 
 
-@@@@@ Code : MailSender
+Purpose:
+This service generates HTML email content using FreeMarker templates and sends it with JavaMailSender.
 
+✅ Best Practices:
+
+Keep the service generic, without business-specific logic.
+
+Use templates (.ftl) for content to ensure separation of concerns.
+
+Log success/failure for traceability.
+
+Catch and rethrow exceptions with business-specific errors (BusinessErrorMessage).
+
+
+
+3. MailSender Enum
+
+The MailSender enum defines the different email types and their associated templates.
+
+
+@@@@@@@Code :MailSender
+
+
+
+Purpose:
+This enum defines different email types with their associated FreeMarker template and subject. It allows centralizing all email logic.
+
+✅ Best Practices:
+
+Centralize all templates and subjects in the enum for easier maintenance.
+
+Build the email subject dynamically when necessary.
+
+Pass only DTOs (NotifEmailDto) and not raw entities to keep it decoupled.
 
 
 4. Scheduler
 
-La classe SchedulerEmailNotif orchestre l’exécution périodique et déclenche l’envoi d’email.
+@@@ Code : 4. Scheduler
+
+@@@
+
+📌 Purpose:
+This class orchestrates the scheduled execution of email notifications. It collects data, builds DTOs, and triggers the appropriate MailSender.
+
+✅ Best Practices:
+
+Keep the scheduler focused on orchestration, not on data processing.
+
+Offload data preparation to repositories/services.
+
+Ensure scheduling frequency is configurable (via application.yml or Quartz).
 
 
-Templates FreeMarker
 
-Les templates sont définis dans des fichiers .ftl.
-Exemple : risk-limit-template.ftl
+FreeMarker templates : 
+
+Purpose:
+Defines the HTML structure of the email, with placeholders for dynamic data injected by FreeMarker.
+
+General Best Practices
+
+✅ Best Practices:
+
+Keep templates simple and avoid heavy business logic.
+
+Use ${variable} placeholders for clarity.
+
+Ensure email is compatible with common email clients (test in Outlook/Gmail).
+
+Store templates under resources/templates.
+
+Best Practices
+
+Externalize .ftl templates in resources/templates.
+
+Keep the EmailService generic, without business logic.
+
+Use MailSender enum to centralize all email types and subjects.
+
+Always log success and failure when sending emails.
+
+Enable mail.debug=true only in non-production profiles (recette, staging).
+Example:
 
 
-Avantage de FreeMarker : séparation claire entre logique métier (Java) et présentation (HTML).
+# application-recette.yml
+spring:
+  mail:
+    properties:
+      mail.debug: true
 
-Bonnes pratiques
-
-Externaliser les templates .ftl dans src/main/resources/templates.
-
-Garder le service générique → EmailService ne doit pas contenir de logique métier.
-
-Utiliser l’enum MailSender pour centraliser les types de mails.
-
-Logger systématiquement les tentatives d’envoi (succès/échec).
-
-Activer le mode debug SMTP en recette (mail.debug=true), mais désactiver en prod.
-
-Prévoir des tests unitaires sur :
-
-la construction des variables injectées,
-
-la génération du NotifEmailDto,
-
-le fallback en cas de TemplateException.
+# application-prod.yml
+spring:
+  mail:
+    properties:
+      mail.debug: false
