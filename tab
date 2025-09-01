@@ -1,14 +1,81 @@
-@Test
-void should_call_processJsonDiff() {
-    try (MockedStatic<JsonUtils> utilities = Mockito.mockStatic(JsonUtils.class)) {
-        // Arrange : on définit le comportement
-        utilities.when(() -> JsonUtils.processJsonDiff(anyString(), anyString()))
-                 .thenReturn(List.of(new JsonDiffDto()));
+Envoi d’Emails – Notification Automatique
+🎯 Objectif
 
-        // Act : on exécute ton code
-        schedulerEmailNotif.executeTaskEmailNotif();
+L’objectif est d’envoyer automatiquement des emails de notification (par exemple : publication de référentiels) en utilisant JavaMailSender et des templates FreeMarker.
+Ce module permet de générer des emails dynamiques en HTML basés sur des données métiers (NotifEmailDto).
 
-        // Assert : on vérifie que la méthode statique a bien été appelée
-        utilities.verify(() -> JsonUtils.processJsonDiff(anyString(), anyString()));
-    }
-}
+
+Architecture Technique
+1. Configuration du MailSender
+
+La configuration du client SMTP est définie dans la classe MailSenderConfig.
+
+@@@@@Code : MailSenderConfig
+
+Cette configuration permet :
+
+d’initialiser le client SMTP,
+
+de définir les propriétés (host, protocol, debug…),
+
+de s’appuyer sur les propriétés applicatives (MailProperties).
+
+2. Service d’Envoi d’Email
+
+Le service EmailService encapsule la logique d’envoi via JavaMailSender et FreeMarker.
+
+@@@@@@Code : EmailService
+
+ci :
+
+FreeMarker est utilisé pour générer le contenu HTML en injectant les variables,
+
+JavaMailSender se charge de l’envoi effectif,
+
+La gestion d’erreurs est centralisée avec BusinessErrorMessage.
+
+
+
+3. Enum MailSender
+
+L’enum MailSender permet de définir différents types de mails avec leur template associé.
+
+Exemple : notification de publication Risk Limit.
+
+
+@@@@@ Code : MailSender
+
+
+
+4. Scheduler
+
+La classe SchedulerEmailNotif orchestre l’exécution périodique et déclenche l’envoi d’email.
+
+
+Templates FreeMarker
+
+Les templates sont définis dans des fichiers .ftl.
+Exemple : risk-limit-template.ftl
+
+
+Avantage de FreeMarker : séparation claire entre logique métier (Java) et présentation (HTML).
+
+Bonnes pratiques
+
+Externaliser les templates .ftl dans src/main/resources/templates.
+
+Garder le service générique → EmailService ne doit pas contenir de logique métier.
+
+Utiliser l’enum MailSender pour centraliser les types de mails.
+
+Logger systématiquement les tentatives d’envoi (succès/échec).
+
+Activer le mode debug SMTP en recette (mail.debug=true), mais désactiver en prod.
+
+Prévoir des tests unitaires sur :
+
+la construction des variables injectées,
+
+la génération du NotifEmailDto,
+
+le fallback en cas de TemplateException.
