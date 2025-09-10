@@ -1,11 +1,1 @@
-Pour optimiser notre code et simplifier la maintenance :
 
-✅ J’ai créé une nouvelle API côté XXX permettant de récupérer les valeurs de ces tables Types de manière centralisée.
-
-📄 J’ai rédigé une courte documentation à ce sujet (lien/chemin : [insérer le lien Confluence ou dossier]).
-
-⚡ J’en ai également profité pour ajouter une bibliothèque très utile côté Front (Ramda). Celle-ci nous permettra d’écrire du code plus fonctionnel, plus lisible et plus facile à maintenir.
-
-N’hésitez pas à consulter la documentation et à me faire part de vos retours ou suggestions d’amélioration.
-
-Bien cordialement,
