@@ -1,63 +1,11 @@
-Naming Convention for “Type” Tables Used for Front-End Fields (FER)
+Pour optimiser notre code et simplifier la maintenance :
 
-Purpose
+✅ J’ai créé une nouvelle API côté XXX permettant de récupérer les valeurs de ces tables Types de manière centralisée.
 
-To ensure consistency, visibility, and to reduce unnecessary back-end code, we are defining a standard naming convention for tables that are used only to provide dropdown or list values for the front-end (FER).
+📄 J’ai rédigé une courte documentation à ce sujet (lien/chemin : [insérer le lien Confluence ou dossier]).
 
-These tables:
+⚡ J’en ai également profité pour ajouter une bibliothèque très utile côté Front (Ramda). Celle-ci nous permettra d’écrire du code plus fonctionnel, plus lisible et plus facile à maintenir.
 
-Are not intended to support complex business logic.
+N’hésitez pas à consulter la documentation et à me faire part de vos retours ou suggestions d’amélioration.
 
-Do not require creating a Spring Boot Entity or Repository.
-
-Are consumed only through a generic API to expose their values.
-
-Proposed Naming Convention
-
-fer_types_fieldname
-
-
-| Context | Front-End Field  | Table Name           |
-| ------- | ---------------- | -------------------- |
-| FER     | Product Category | `fer_types_category` |
-| FER     | Status Type      | `fer_types_status`   |
-
-
-Explanation:
-
-fer: Identifies your scope (Front-End Referential).
-
-types: Indicates this is a type table.
-
-fieldname: Matches the actual field name used by the front-end.
-
-Minimum Table Structure
-
-Each type table must contain only:
-
-
-| Column | SQL Type                    | Description                   |
-| ------ | --------------------------- | ----------------------------- |
-| `id`   | BIGINT (PK) AUTO\_INCREMENT | Unique identifier.            |
-| `name` | VARCHAR                     | Value displayed on the front. |
-
-
-
-Value Consumption
-
-A generic API has been added in XXX to retrieve these values.
-
-No specific Entity or Repository should be created for these tables to avoid unnecessary code.
-
-If a type table ever requires additional fields, extend the generic API and update the documentation accordingly.
-
-
-Benefits
-
-📋 Better visibility: All FER-related type tables are easy to identify in the database manager.
-
-🔄 Consistency: Unified format for all type tables.
-
-✂️ Less code: No need for extra Entities or Repositories.
-
-🧹 Simpler maintenance: New values can be added directly in the database without impacting the back-end.
+Bien cordialement,
