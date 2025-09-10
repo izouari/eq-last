@@ -1,1 +1,59 @@
+Nomenclature des tables « types » pour les champs Front-End (FER)
+🎯 Objectif
 
+Afin de garantir la cohérence, la visibilité et de réduire le code inutile côté back-end, nous définissons une nomenclature standardisée pour les tables qui servent uniquement à fournir des valeurs de type dropdown ou listes pour le front-end (FER).
+
+Ces tables :
+
+Ne sont pas destinées à supporter une logique métier complexe.
+
+Ne nécessitent pas la création d’objets Entity ni de Repository Spring Boot.
+
+Sont consommées uniquement via une API générique côté back pour exposer leurs valeurs.
+
+Nomenclature proposée
+
+nom_fer_types_nom_champ
+
+Exemples
+
+| Contexte | Champ Front       | Nom de table         |
+| -------- | ----------------- | -------------------- |
+| FER      | Catégorie produit | `fer_types_category` |
+| FER      | Type de statut    | `fer_types_status`   |
+
+
+Explications :
+
+fer : identifie votre périmètre (Front-End Referential).
+
+types : indique qu’il s’agit d’une table type.
+
+nom_champ : correspond au champ réel utilisé par le front.
+
+tructure minimale des tables
+
+Chaque table de ce type doit contenir uniquement :
+
+| Champ  | Type SQL                    | Description                 |
+| ------ | --------------------------- | --------------------------- |
+| `id`   | BIGINT (PK) AUTO\_INCREMENT | Identifiant unique.         |
+| `name` | VARCHAR                     | Valeur affichée côté front. |
+
+Consommation des valeurs
+
+Une API générique a été ajoutée côté XXX pour récupérer ces valeurs.
+
+Aucune Entity/Repo spécifique ne doit être créée pour ces tables afin d’éviter du code inutile.
+
+En cas de besoin d’enrichir une table type avec plus de champs, mettre à jour l’API générique et documenter les champs supplémentaires.
+
+Bénéfices
+
+📋 Visibilité accrue : toutes les tables types liées à FER sont facilement identifiables dans le gestionnaire de base de données.
+
+🔄 Cohérence : même format pour toutes les tables types.
+
+✂️ Réduction du code : moins d’Entities et de Repositories à maintenir.
+
+🧹 Maintenance simplifiée : les nouvelles valeurs sont ajoutées directement en base sans impact back-end.
