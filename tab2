@@ -1,0 +1,35 @@
+Utiliser Ramda pour optimiser le code front-end (vs Lodash)
+🎯 Contexte
+
+Dans nos développements front-end, nous utilisons souvent des bibliothèques utilitaires pour :
+
+Manipuler des tableaux et des objets.
+
+Chaîner des transformations.
+
+Écrire un code plus concis et lisible.
+
+Historiquement, Lodash est très répandu. Cependant, Ramda apporte des avantages significatifs qui permettent d’optimiser et de rendre notre code plus fonctionnel et maintenable.
+
+| Aspect            | Lodash                            | Ramda                                                        |
+| ----------------- | --------------------------------- | ------------------------------------------------------------ |
+| **Paradigme**     | Impératif/Orienté objet           | 100% fonctionnel et immuable                                 |
+| **Immutabilité**  | Partielle (mutable par défaut)    | Immuable par défaut                                          |
+| **Curryfication** | Limitée (avec `_.curry`)          | Native et systématique                                       |
+| **Chaînage**      | Basé sur des wrappers (`_.chain`) | Direct avec composition (`R.pipe`, `R.compose`)              |
+| **Lisibilité**    | Bonne, mais souvent verbeuse      | Très lisible et expressif pour des transformations complexes |
+| **Poids**         | Plus lourd dans certains cas      | Plus léger et plus adapté au tree-shaking moderne            |
+
+Exemple concret
+
+Avantages principaux de Ramda
+
+Style fonctionnel cohérent : toutes les fonctions sont curryfiées et prennent les données en dernier argument.
+
+Immutabilité par défaut : réduit les effets de bord et les bugs.
+
+Meilleure composition : R.pipe et R.compose facilitent les pipelines complexes.
+
+Tree-shaking efficace : réduit la taille du bundle si on importe uniquement ce qui est nécessaire.
+
+Lisibilité accrue : le code devient plus déclaratif et facile à tester.
