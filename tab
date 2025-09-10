@@ -1,59 +1,63 @@
-Nomenclature des tables « types » pour les champs Front-End (FER)
-🎯 Objectif
+Naming Convention for “Type” Tables Used for Front-End Fields (FER)
 
-Afin de garantir la cohérence, la visibilité et de réduire le code inutile côté back-end, nous définissons une nomenclature standardisée pour les tables qui servent uniquement à fournir des valeurs de type dropdown ou listes pour le front-end (FER).
+Purpose
 
-Ces tables :
+To ensure consistency, visibility, and to reduce unnecessary back-end code, we are defining a standard naming convention for tables that are used only to provide dropdown or list values for the front-end (FER).
 
-Ne sont pas destinées à supporter une logique métier complexe.
+These tables:
 
-Ne nécessitent pas la création d’objets Entity ni de Repository Spring Boot.
+Are not intended to support complex business logic.
 
-Sont consommées uniquement via une API générique côté back pour exposer leurs valeurs.
+Do not require creating a Spring Boot Entity or Repository.
 
-Nomenclature proposée
+Are consumed only through a generic API to expose their values.
 
-nom_fer_types_nom_champ
+Proposed Naming Convention
 
-Exemples
-
-| Contexte | Champ Front       | Nom de table         |
-| -------- | ----------------- | -------------------- |
-| FER      | Catégorie produit | `fer_types_category` |
-| FER      | Type de statut    | `fer_types_status`   |
+fer_types_fieldname
 
 
-Explications :
+| Context | Front-End Field  | Table Name           |
+| ------- | ---------------- | -------------------- |
+| FER     | Product Category | `fer_types_category` |
+| FER     | Status Type      | `fer_types_status`   |
 
-fer : identifie votre périmètre (Front-End Referential).
 
-types : indique qu’il s’agit d’une table type.
+Explanation:
 
-nom_champ : correspond au champ réel utilisé par le front.
+fer: Identifies your scope (Front-End Referential).
 
-tructure minimale des tables
+types: Indicates this is a type table.
 
-Chaque table de ce type doit contenir uniquement :
+fieldname: Matches the actual field name used by the front-end.
 
-| Champ  | Type SQL                    | Description                 |
-| ------ | --------------------------- | --------------------------- |
-| `id`   | BIGINT (PK) AUTO\_INCREMENT | Identifiant unique.         |
-| `name` | VARCHAR                     | Valeur affichée côté front. |
+Minimum Table Structure
 
-Consommation des valeurs
+Each type table must contain only:
 
-Une API générique a été ajoutée côté XXX pour récupérer ces valeurs.
 
-Aucune Entity/Repo spécifique ne doit être créée pour ces tables afin d’éviter du code inutile.
+| Column | SQL Type                    | Description                   |
+| ------ | --------------------------- | ----------------------------- |
+| `id`   | BIGINT (PK) AUTO\_INCREMENT | Unique identifier.            |
+| `name` | VARCHAR                     | Value displayed on the front. |
 
-En cas de besoin d’enrichir une table type avec plus de champs, mettre à jour l’API générique et documenter les champs supplémentaires.
 
-Bénéfices
 
-📋 Visibilité accrue : toutes les tables types liées à FER sont facilement identifiables dans le gestionnaire de base de données.
+Value Consumption
 
-🔄 Cohérence : même format pour toutes les tables types.
+A generic API has been added in XXX to retrieve these values.
 
-✂️ Réduction du code : moins d’Entities et de Repositories à maintenir.
+No specific Entity or Repository should be created for these tables to avoid unnecessary code.
 
-🧹 Maintenance simplifiée : les nouvelles valeurs sont ajoutées directement en base sans impact back-end.
+If a type table ever requires additional fields, extend the generic API and update the documentation accordingly.
+
+
+Benefits
+
+📋 Better visibility: All FER-related type tables are easy to identify in the database manager.
+
+🔄 Consistency: Unified format for all type tables.
+
+✂️ Less code: No need for extra Entities or Repositories.
+
+🧹 Simpler maintenance: New values can be added directly in the database without impacting the back-end.
