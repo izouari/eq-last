@@ -1,39 +1,16 @@
-// SseHub.java
-@Component
-public class SseHub {
-  private final Map<String, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
+// 2) Flux SSE temps réel (les clients s’abonnent ici)
+  @GetMapping(path = "/{version}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public SseEmitter stream(@PathVariable String version) {
+    // Timeout côté serveur : 0L = pas de timeout (ou par ex. 30mn = 30*60*1000)
+    SseEmitter emitter = sse.subscribe(version, 0L);
 
-  public SseEmitter subscribe(String version, Long timeoutMs) {
-    var emitter = new SseEmitter(timeoutMs); // 0L = pas de timeout serveur
-    emitters.computeIfAbsent(version, v -> new CopyOnWriteArrayList<>()).add(emitter);
-
-    // Nettoyage quand le client ferme
-    emitter.onCompletion(() -> remove(version, emitter));
-    emitter.onTimeout(() -> remove(version, emitter));
-    emitter.onError(e -> remove(version, emitter));
+    // Option : envoyer l’état actuel immédiatement (pratique pour reprendre un flux)
+    String current = copyStatusRepo.findTopByVersionOrderByUpdatedAtDesc(version)
+        .map(CopyStatusEntity::getStatus).orElse("UNKNOWN");
+    try {
+      emitter.send(SseEmitter.event().name("progress")
+          .data(Map.of("version", version, "copyStatus", current)));
+    } catch (Exception ignored) {}
 
     return emitter;
   }
-
-  public void send(String version, String eventName, Object data) {
-    var list = emitters.getOrDefault(version, List.of());
-    for (var em : list) {
-      try {
-        em.send(SseEmitter.event().name(eventName).data(data));
-      } catch (Exception e) {
-        em.completeWithError(e);
-      }
-    }
-  }
-
-  public void complete(String version) {
-    var list = emitters.remove(version);
-    if (list != null) list.forEach(SseEmitter::complete);
-  }
-
-  private void remove(String version, SseEmitter em) {
-    var list = emitters.get(version);
-    if (list != null) list.remove(em);
-  }
-}
-
