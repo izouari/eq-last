@@ -1,1 +1,39 @@
+// SseHub.java
+@Component
+public class SseHub {
+  private final Map<String, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
+
+  public SseEmitter subscribe(String version, Long timeoutMs) {
+    var emitter = new SseEmitter(timeoutMs); // 0L = pas de timeout serveur
+    emitters.computeIfAbsent(version, v -> new CopyOnWriteArrayList<>()).add(emitter);
+
+    // Nettoyage quand le client ferme
+    emitter.onCompletion(() -> remove(version, emitter));
+    emitter.onTimeout(() -> remove(version, emitter));
+    emitter.onError(e -> remove(version, emitter));
+
+    return emitter;
+  }
+
+  public void send(String version, String eventName, Object data) {
+    var list = emitters.getOrDefault(version, List.of());
+    for (var em : list) {
+      try {
+        em.send(SseEmitter.event().name(eventName).data(data));
+      } catch (Exception e) {
+        em.completeWithError(e);
+      }
+    }
+  }
+
+  public void complete(String version) {
+    var list = emitters.remove(version);
+    if (list != null) list.forEach(SseEmitter::complete);
+  }
+
+  private void remove(String version, SseEmitter em) {
+    var list = emitters.get(version);
+    if (list != null) list.remove(em);
+  }
+}
 
