@@ -1,0 +1,29 @@
+// PublicationWidget.js
+import React, { useState } from 'react';
+import { launchPublication } from './api';
+import { usePublicationSSE } from './usePublicationSSE';
+
+export default function PublicationWidget() {
+  const [refName, setRefName] = useState('referential_principale');
+  const [workspaceId, setWorkspaceId] = useState('');
+  const [version, setVersion] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const { status, isDone, error, messages } = usePublicationSSE(version);
+
+  const handleLaunch = async () => {
+    setLoading(true);
+    try {
+      const res = await launchPublication(refName, workspaceId || null);
+      setVersion(res.version); // déclenche l'abonnement SSE
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+   
+  );
+}
