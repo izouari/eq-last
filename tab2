@@ -1,1 +1,43 @@
 
+// usePublicationSSE.js
+import { useEffect, useState } from 'react';
+
+export function usePublicationSSE(version) {
+  const [status, setStatus] = useState();
+  const [messages, setMessages] = useState([]);
+  const [isDone, setIsDone] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!version) return; // pas de version → pas d'abonnement
+
+    const es = new EventSource(`/publications/${version}/stream`, { withCredentials: true });
+
+    // PROGRESS → maj du statut
+    es.addEventListener('progress', e => {
+      try {
+        const data = JSON.parse(e.data);
+        setStatus(data.copyStatus);
+        setMessages(prev => [...prev, data.message || `Statut : ${data.copyStatus}`]);
+      } catch {
+        setStatus(e.data);
+      }
+    });
+
+    // DONE → marquer terminé et fermer
+    es.addEventListener('done', e => {
+      setIsDone(true);
+      es.close();
+    });
+
+    // ERROR → afficher et fermer
+    es.addEventListener('error', e => {
+      setError('Flux SSE interrompu ou erreur serveur.');
+      es.close();
+    });
+
+    return () => es.close(); // cleanup au démontage
+  }, [version]);
+
+  return { status, isDone, error, messages };
+}
