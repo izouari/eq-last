@@ -1,16 +1,50 @@
-// 2) Flux SSE temps réel (les clients s’abonnent ici)
-  @GetMapping(path = "/{version}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-  public SseEmitter stream(@PathVariable String version) {
-    // Timeout côté serveur : 0L = pas de timeout (ou par ex. 30mn = 30*60*1000)
-    SseEmitter emitter = sse.subscribe(version, 0L);
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
 
-    // Option : envoyer l’état actuel immédiatement (pratique pour reprendre un flux)
-    String current = copyStatusRepo.findTopByVersionOrderByUpdatedAtDesc(version)
-        .map(CopyStatusEntity::getStatus).orElse("UNKNOWN");
-    try {
-      emitter.send(SseEmitter.event().name("progress")
-          .data(Map.of("version", version, "copyStatus", current)));
-    } catch (Exception ignored) {}
+import java.util.List;
 
-    return emitter;
-  }
+@Configuration
+public class SecurityAndCorsConfig {
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration cfg = new CorsConfiguration();
+
+        // ⚠️ schémas EXACTS : http ET https si tu alternes
+        cfg.setAllowedOriginPatterns(List.of(
+                "https://localhost:4000",
+                "http://localhost:4000"
+        ));
+        cfg.setAllowCredentials(true);
+        cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+        cfg.setAllowedHeaders(List.of(
+                "Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"
+        ));
+        cfg.setExposedHeaders(List.of("Cache-Control","Content-Type"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", cfg);
+        return source;
+    }
+
+    @Bean
+    public SecurityFilterChain security(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .cors(Customizer.withDefaults())
+            // IMPORTANT : ne jamais exiger d’auth sur le preflight
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // autorisations habituelles…
+                .anyRequest().authenticated()
+            );
+        return http.build();
+    }
+}
