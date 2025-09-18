@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: publication-app
+
+# Redisson: mode single (local)
+redisson:
+  threads: 4                 # (facultatif) threads internes Redisson
+  nettyThreads: 4            # (facultatif)
+  singleServerConfig:
+    address: "redis://localhost:6379"         # Redis local
+    # password: "change-me"                   # si AUTH activé
+    database: 0
+    connectionMinimumIdleSize: 2
+    connectionPoolSize: 16
+    idleConnectionTimeout: 10000
+    connectTimeout: 10000
+    timeout: 3000
+    retryAttempts: 3
+    retryInterval: 1500
