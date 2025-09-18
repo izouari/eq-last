@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: publication-app
+
+# Redisson: mode Sentinel (HA)
+redisson:
+  threads: 8
+  nettyThreads: 8
+  sentinelServersConfig:
+    masterName: "mymaster"     # DOIT matcher la config Sentinel
+    sentinelAddresses:         # DNS des services Sentinel en K8s
+      - "redis-sentinel.default.svc.cluster.local:26379"
+      - "redis-sentinel-2.default.svc.cluster.local:26379"
+      - "redis-sentinel-3.default.svc.cluster.local:26379"
+    # password: "prod-strong-password"         # mot de passe du master, si activé
+    database: 0
+    masterConnectionMinimumIdleSize: 4
+    masterConnectionPoolSize: 32
+    slaveConnectionMinimumIdleSize: 4
+    slaveConnectionPoolSize: 32
+    idleConnectionTimeout: 10000
+    connectTimeout: 10000
+    timeout: 3000
+    retryAttempts: 3
+    retryInterval: 1500
+    dnsMonitoringInterval: 5000
